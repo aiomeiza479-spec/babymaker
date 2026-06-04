@@ -52,11 +52,12 @@ header {
 /* ===== UPLOAD SECTION ===== */
 .upload-section {
     display: flex;
+    flex-direction: row;
     justify-content: center;
     align-items: center;
     gap: 20px;
     padding: 30px 20px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
 }
 
 .upload-box {
