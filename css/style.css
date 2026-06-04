@@ -50,14 +50,20 @@ header {
 }
 
 /* ===== UPLOAD SECTION ===== */
+/* ===== UPLOAD SECTION ===== */
 .upload-section {
     display: flex;
     flex-direction: row;
     justify-content: center;
     align-items: center;
-    gap: 20px;
-    padding: 30px 20px;
+    gap: 15px;
+    padding: 20px 15px;
     flex-wrap: nowrap;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    box-sizing: border-box;
+    overflow: hidden;
 }
 
 .upload-box {
@@ -65,11 +71,16 @@ header {
     backdrop-filter: blur(10px);
     border: 2px dashed rgba(255, 255, 255, 0.5);
     border-radius: 20px;
-    width: 220px;
-    padding: 20px;
+    flex: 1;
+    min-width: 0;
+    max-width: 220px;
+    padding: 15px 10px;
     text-align: center;
     transition: all 0.3s ease;
+    box-sizing: border-box;
 }
+
+
 
 .upload-box:hover {
     background: rgba(255, 255, 255, 0.25);
@@ -392,7 +403,6 @@ header .logo a {
 /* Mobile Responsive Result Page */
 /* ===== MOBILE RESPONSIVE ===== */
 /* ===== MOBILE RESPONSIVE ===== */
-/* ===== MOBILE RESPONSIVE ===== */
 @media (max-width: 600px) {
 
     .logo {
@@ -416,25 +426,19 @@ header .logo a {
     }
 
     .upload-section {
-        flex-direction: row;
-        flex-wrap: nowrap;
-        gap: 6px;
-        padding: 10px 6px;
-        width: 100%;
-        box-sizing: border-box;
+        gap: 8px;
+        padding: 15px 10px;
     }
 
     .upload-box {
-        width: 44%;
-        max-width: 160px;
-        padding: 10px 8px;
-        box-sizing: border-box;
+        max-width: 45%;
+        padding: 12px 8px;
     }
 
     .upload-preview {
-        width: 80px;
-        height: 80px;
-        margin: 0 auto 10px;
+        width: 75px;
+        height: 75px;
+        margin: 0 auto 8px;
     }
 
     .upload-icon {
@@ -447,15 +451,13 @@ header .logo a {
 
     .upload-btn {
         font-size: 0.72rem;
-        padding: 7px 6px;
+        padding: 8px 5px;
         width: 100%;
     }
 
     .plus-sign {
         font-size: 1.4rem;
         flex-shrink: 0;
-        width: 20px;
-        text-align: center;
     }
 
     .generate-btn {
@@ -464,6 +466,10 @@ header .logo a {
         width: 88%;
     }
 }
+       
+
+
+   
 }
 
 /* ===== SIMPLE PAGES (Privacy, Terms, About) ===== */
