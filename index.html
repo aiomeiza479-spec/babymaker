@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BabyMaker.fun - See What Your Baby Could Look Like</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- HEADER -->
+    <header>
+        <div class="logo">👶 BabyMaker.fun</div>
+        <p class="tagline">See what your future baby could look like using AI</p>
+    </header>
+
+    <!-- HERO SECTION -->
+    <section class="hero">
+        <h1>Generate Your AI Baby</h1>
+        <p>Upload two photos and our AI will create your future baby's face instantly</p>
+    </section>
+
+    <!-- UPLOAD SECTION -->
+    <section class="upload-section">
+
+        <!-- Upload Box 1 -->
+        <div class="upload-box" id="box1">
+            <div class="upload-preview" id="preview1">
+                <span class="upload-icon">📷</span>
+                <p>Upload Your Photo</p>
+            </div>
+            <input type="file" id="upload1" accept="image/*" hidden>
+            <button class="upload-btn" onclick="triggerUpload('upload1', 'preview1')">
+                Choose Photo
+            </button>
+        </div>
+
+        <!-- Plus Sign Between Boxes -->
+        <div class="plus-sign">+</div>
+
+        <!-- Upload Box 2 -->
+        <div class="upload-box" id="box2">
+            <div class="upload-preview" id="preview2">
+                <span class="upload-icon">📷</span>
+                <p>Upload Their Photo</p>
+            </div>
+            <input type="file" id="upload2" accept="image/*" hidden>
+            <button class="upload-btn" onclick="triggerUpload('upload2', 'preview2')">
+                Choose Photo
+            </button>
+        </div>
+
+    </section>
+
+    <!-- ERROR MESSAGE -->
+    <p class="error-msg" id="errorMsg"></p>
+
+    <!-- GENERATE BUTTON -->
+    <section class="generate-section">
+        <button class="generate-btn" id="generateBtn" onclick="generateBaby()">
+            ✨ Generate Our Baby
+        </button>
+    </section>
+
+    <!-- AD PLACEMENT #1 — Shows while generating -->
+    <section class="ad-section" id="adLoading" style="display:none;">
+        <p class="ad-label">Advertisement</p>
+        <div class="ad-box">
+            <!-- PASTE YOUR ADSTERRA OR MONETAG AD CODE HERE LATER -->
+            <p>Ad loads here while your baby is generating...</p>
+        </div>
+        <div class="loading-animation">
+            <div class="spinner"></div>
+            <p id="loadingText">Creating your baby... please wait ✨</p>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <p>© 2026 BabyMaker.fun — All results are AI generated for entertainment only</p>
+        <div class="footer-links">
+            <a href="privacy.html">Privacy Policy</a>
+            <a href="terms.html">Terms of Use</a>
+            <a href="about.html">About</a>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
