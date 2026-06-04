@@ -431,15 +431,17 @@ header .logo a {
     }
 
     .upload-box {
-        max-width: 45%;
+        max-width: 44%;
         padding: 12px 8px;
     }
 
-    .upload-preview {
-        width: 75px;
-        height: 75px;
-        margin: 0 auto 8px;
-    }
+    .upload-preview p {
+    font-size: 0.68rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+}
 
     .upload-icon {
         font-size: 1.5rem;
@@ -449,16 +451,19 @@ header .logo a {
         font-size: 0.70rem;
     }
 
-    .upload-btn {
-        font-size: 0.72rem;
-        padding: 8px 5px;
-        width: 100%;
-    }
+   .upload-btn {
+    font-size: 0.70rem;
+    padding: 8px 4px;
+    width: 100%;
+    white-space: nowrap;
+}
 
     .plus-sign {
-        font-size: 1.4rem;
-        flex-shrink: 0;
-    }
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    width: 15px;
+}
+
 
     .generate-btn {
         padding: 14px 30px;
