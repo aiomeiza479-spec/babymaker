@@ -1,30 +1,27 @@
 export default async function handler(req, res) {
 
-    // Only allow POST requests
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
     const { image1, image2 } = req.body;
 
-    // Check both images provided
     if (!image1 || !image2) {
         return res.status(400).json({ error: 'Both images are required' });
     }
 
     try {
-        // Start prediction on Replicate
-        const startResponse = await fetch(
-            'https://api.replicate.com/v1/predictions',
+        // First call — load model
+        const response = await fetch(
+            'https://api-inference.huggingface.co/models/deepinsight/insightface',
             {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Token ${process.env.REPLICATE_API_TOKEN}`,
+                    'Authorization': `Bearer ${process.env.HUGGINGFACE_API_TOKEN}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    version: "9283608cc6b7be6b65a8e44983db012355f33b892e9cce2ea8ef5f3ec4e9d6d6",
-                    input: {
+                    inputs: {
                         source_image: image1,
                         target_image: image2
                     }
@@ -32,47 +29,44 @@ export default async function handler(req, res) {
             }
         );
 
-        const prediction = await startResponse.json();
+        // If model is loading wait and retry
+        if (response.status === 503) {
+            await new Promise(resolve => setTimeout(resolve, 20000));
 
-        // Poll every 2 seconds until result is ready
-        let result = prediction;
-        let attempts = 0;
-
-        while (
-            result.status !== 'succeeded' && 
-            result.status !== 'failed' && 
-            attempts < 30
-        ) {
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
-            const pollResponse = await fetch(
-                `https://api.replicate.com/v1/predictions/${result.id}`,
+            const retryResponse = await fetch(
+                'https://api-inference.huggingface.co/models/deepinsight/insightface',
                 {
+                    method: 'POST',
                     headers: {
-                        'Authorization': `Token ${process.env.REPLICATE_API_TOKEN}`
-                    }
+                        'Authorization': `Bearer ${process.env.HUGGINGFACE_API_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        inputs: {
+                            source_image: image1,
+                            target_image: image2
+                        }
+                    })
                 }
             );
-            
-            result = await pollResponse.json();
-            attempts++;
-        }
 
-        // Handle failure
-        if (result.status === 'failed' || attempts >= 30) {
-            return res.status(500).json({ 
-                error: 'Generation failed. Please try again.' 
+            const retryBuffer = await retryResponse.arrayBuffer();
+            const retryBase64 = Buffer.from(retryBuffer).toString('base64');
+            return res.status(200).json({
+                output: `data:image/jpeg;base64,${retryBase64}`
             });
         }
 
-        // Return generated baby image
-        return res.status(200).json({ 
-            output: result.output 
+        const buffer = await response.arrayBuffer();
+        const base64 = Buffer.from(buffer).toString('base64');
+
+        return res.status(200).json({
+            output: `data:image/jpeg;base64,${base64}`
         });
 
     } catch (error) {
-        return res.status(500).json({ 
-            error: 'Something went wrong. Please try again.' 
+        return res.status(500).json({
+            error: 'Something went wrong. Please try again.'
         });
     }
 }

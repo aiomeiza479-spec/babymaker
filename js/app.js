@@ -130,6 +130,17 @@ async function generateWithReplicate(imageUrl1, imageUrl2) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image1: imageUrl1, image2: imageUrl2 })
     });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Generation failed');
+    }
+
     const data = await response.json();
+
+    if (!data.output) {
+        throw new Error('No image generated. Please try again.');
+    }
+
     return data.output;
 }
