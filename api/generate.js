@@ -11,60 +11,31 @@ export default async function handler(req, res) {
     }
 
     try {
-        // First call — load model
-        const response = await fetch(
-            'https://api-inference.huggingface.co/models/deepinsight/insightface',
-            {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${process.env.HUGGINGFACE_API_TOKEN}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    inputs: {
-                        source_image: image1,
-                        target_image: image2
-                    }
-                })
-            }
-        );
+        const { Client } = await import('@gradio/client');
 
-        // If model is loading wait and retry
-        if (response.status === 503) {
-            await new Promise(resolve => setTimeout(resolve, 20000));
+        const client = await Client.connect('tonyassi/face-swap', {
+            hf_token: process.env.HUGGINGFACE_API_TOKEN
+        });
 
-            const retryResponse = await fetch(
-                'https://api-inference.huggingface.co/models/deepinsight/insightface',
-                {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${process.env.HUGGINGFACE_API_TOKEN}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        inputs: {
-                            source_image: image1,
-                            target_image: image2
-                        }
-                    })
-                }
-            );
+        const result = await client.predict('/predict', {
+            image_1: image1,
+            image_2: image2
+        });
 
-            const retryBuffer = await retryResponse.arrayBuffer();
-            const retryBase64 = Buffer.from(retryBuffer).toString('base64');
-            return res.status(200).json({
-                output: `data:image/jpeg;base64,${retryBase64}`
+        if (!result || !result.data) {
+            return res.status(500).json({
+                error: 'Generation failed. Please try again.'
             });
         }
 
-        const buffer = await response.arrayBuffer();
-        const base64 = Buffer.from(buffer).toString('base64');
+        const outputUrl = result.data[0]?.url || result.data[0];
 
         return res.status(200).json({
-            output: `data:image/jpeg;base64,${base64}`
+            output: outputUrl
         });
 
     } catch (error) {
+        console.error('Generation error:', error);
         return res.status(500).json({
             error: 'Something went wrong. Please try again.'
         });
