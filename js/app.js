@@ -9,76 +9,97 @@ function triggerUpload(inputId, previewId) {
     input.onchange = function () {
         const file = input.files[0];
         if (file) {
-            const reader = new FileReader();
-            reader.onload = function (e) {
+            compressImage(file, function(compressedBase64) {
                 const preview = document.getElementById(previewId);
-                preview.innerHTML = `<img src="${e.target.result}" alt="preview">`;
-
-                // Store image data
+                preview.innerHTML = `<img src="${compressedBase64}" alt="preview">`;
                 if (inputId === 'upload1') {
-                    image1 = e.target.result;
+                    image1 = compressedBase64;
                 } else {
-                    image2 = e.target.result;
+                    image2 = compressedBase64;
                 }
-            };
-            reader.readAsDataURL(file);
+            });
         }
     };
+}
+
+// ===== COMPRESS IMAGE BEFORE SENDING =====
+function compressImage(file, callback) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            
+            // Max size 800px
+            let width = img.width;
+            let height = img.height;
+            if (width > 800) {
+                height = (height * 800) / width;
+                width = 800;
+            }
+            if (height > 800) {
+                width = (width * 800) / height;
+                height = 800;
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Compress to JPEG at 70% quality
+            const compressed = canvas.toDataURL('image/jpeg', 0.7);
+            callback(compressed);
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
 }
 
 // ===== GENERATE BABY FUNCTION =====
 async function generateBaby() {
 
-    // Check both photos are uploaded
     if (!image1 || !image2) {
-        document.getElementById('errorMsg').textContent = 
+        document.getElementById('errorMsg').textContent =
         '⚠️ Please upload both photos first';
         return;
     }
 
-    // Clear error message
     document.getElementById('errorMsg').textContent = '';
 
-    // Disable generate button
     const btn = document.getElementById('generateBtn');
     btn.disabled = true;
     btn.textContent = '✨ Generating...';
 
-    // Show loading ad section
     document.getElementById('adLoading').style.display = 'block';
 
-    // Update loading messages every few seconds
     const messages = [
         'Analyzing facial features... ✨',
         'Mixing your DNA... 🧬',
-        'Creating your baby... 👶',
+        'Creating your child... 👶',
         'Almost ready... 🎉'
     ];
     let msgIndex = 0;
     const msgInterval = setInterval(() => {
         if (msgIndex < messages.length) {
-            document.getElementById('loadingText').textContent = 
+            document.getElementById('loadingText').textContent =
             messages[msgIndex];
             msgIndex++;
         }
-    }, 2000);
+    }, 4000);
 
     try {
-        // Convert base64 images to blobs for sending
-        const blob1 = await base64ToBlob(image1);
-        const blob2 = await base64ToBlob(image2);
-
         // Upload images to Cloudinary first
-        const imageUrl1 = await uploadToCloudinary(blob1);
-        const imageUrl2 = await uploadToCloudinary(blob2);
+        const imageUrl1 = await uploadToCloudinary(image1);
+        const imageUrl2 = await uploadToCloudinary(image2);
 
-        // Send to Replicate AI to generate baby
-        const babyImageUrl = await generateWithReplicate(imageUrl1, imageUrl2);
+        // Generate baby with Gemini
+        const babyImageUrl = await generateWithGemini(image1, image2);
 
-        // Stop loading messages
         clearInterval(msgInterval);
 
-        // Save result and go to result page
+        // Save results
         localStorage.setItem('babyResult', babyImageUrl);
         localStorage.setItem('image1Url', imageUrl1);
         localStorage.setItem('image2Url', imageUrl2);
@@ -86,33 +107,18 @@ async function generateBaby() {
 
     } catch (error) {
         clearInterval(msgInterval);
-        document.getElementById('errorMsg').textContent = 
-        '❌ Something went wrong. Please try again.';
+        document.getElementById('errorMsg').textContent =
+        '❌ ' + (error.message || 'Something went wrong. Please try again.');
         document.getElementById('adLoading').style.display = 'none';
         btn.disabled = false;
         btn.textContent = '✨ Generate Our Baby';
     }
 }
 
-// ===== CONVERT BASE64 TO BLOB =====
-function base64ToBlob(base64) {
-    return new Promise((resolve) => {
-        const parts = base64.split(';base64,');
-        const contentType = parts[0].split(':')[1];
-        const raw = window.atob(parts[1]);
-        const rawLength = raw.length;
-        const uInt8Array = new Uint8Array(rawLength);
-        for (let i = 0; i < rawLength; ++i) {
-            uInt8Array[i] = raw.charCodeAt(i);
-        }
-        resolve(new Blob([uInt8Array], { type: contentType }));
-    });
-}
-
-// ===== UPLOAD IMAGE TO CLOUDINARY =====
-async function uploadToCloudinary(blob) {
+// ===== UPLOAD TO CLOUDINARY =====
+async function uploadToCloudinary(base64Image) {
     const formData = new FormData();
-    formData.append('file', blob);
+    formData.append('file', base64Image);
     formData.append('upload_preset', 'YOUR_CLOUDINARY_UPLOAD_PRESET');
 
     const response = await fetch(
@@ -123,12 +129,15 @@ async function uploadToCloudinary(blob) {
     return data.secure_url;
 }
 
-// ===== GENERATE BABY WITH REPLICATE AI =====
-async function generateWithReplicate(imageUrl1, imageUrl2) {
+// ===== GENERATE WITH GEMINI =====
+async function generateWithGemini(base64Image1, base64Image2) {
     const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image1: imageUrl1, image2: imageUrl2 })
+        body: JSON.stringify({
+            image1: base64Image1,
+            image2: base64Image2
+        })
     });
 
     if (!response.ok) {
