@@ -13,12 +13,13 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "bugs": {
     "url": "https://github.com/aiomeiza479-spec/babymaker/issues"
   },
   "homepage": "https://github.com/aiomeiza479-spec/babymaker#readme",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@gradio/client": "^2.2.1"
   }
 }
