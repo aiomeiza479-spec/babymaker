@@ -33,13 +33,13 @@ function compressImage(file, callback) {
             // Max size 800px
             let width = img.width;
             let height = img.height;
-            if (width > 800) {
-                height = (height * 800) / width;
-                width = 800;
+            if (width > 400) {
+                height = (height * 400) / width;
+                width = 400;
             }
-            if (height > 800) {
-                width = (width * 800) / height;
-                height = 800;
+            if (height > 400) {
+                width = (width * 400) / height;
+                height = 400;
             }
             
             canvas.width = width;
@@ -49,7 +49,7 @@ function compressImage(file, callback) {
             ctx.drawImage(img, 0, 0, width, height);
             
             // Compress to JPEG at 70% quality
-            const compressed = canvas.toDataURL('image/jpeg', 0.7);
+            const compressed = canvas.toDataURL('image/jpeg', 0.4);
             callback(compressed);
         };
         img.src = e.target.result;
