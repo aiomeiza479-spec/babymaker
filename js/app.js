@@ -119,10 +119,10 @@ async function generateBaby() {
 async function uploadToCloudinary(base64Image) {
     const formData = new FormData();
     formData.append('file', base64Image);
-    formData.append('upload_preset', 'YOUR_CLOUDINARY_UPLOAD_PRESET');
+    formData.append('upload_preset', 'babymaker_preset');
 
     const response = await fetch(
-        'https://api.cloudinary.com/v1_1/YOUR_CLOUDINARY_CLOUD_NAME/image/upload',
+        'https://api.cloudinary.com/v1_1/dlyq6nsmd/image/upload',
         { method: 'POST', body: formData }
     );
     const data = await response.json();
