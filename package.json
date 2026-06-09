@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/aiomeiza479-spec/babymaker#readme",
   "dependencies": {
+    "@google/genai": "^2.8.0",
     "@google/generative-ai": "^0.24.1",
     "@gradio/client": "^2.2.1"
   }
