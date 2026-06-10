@@ -20,50 +20,65 @@ export default async function handler(req, res) {
     }
 
     try {
-        const ai = new GoogleGenAI({ 
-            apiKey: process.env.GEMINI_API_KEY 
+        const ai = new GoogleGenAI({
+            apiKey: process.env.GEMINI_API_KEY
         });
 
         const image1Base64 = image1.includes(",") ? image1.split(",")[1] : image1;
         const image2Base64 = image2.includes(",") ? image2.split(",")[1] : image2;
 
-        const prompt = `Generate a beautifully candid half-body portrait of a single 10-year-old child captured from the waist up. The gender of the child should be spontaneously randomized on every generation. The child is the biological offspring of the two individuals in the uploaded reference images, seamlessly inheriting an accurate natural blend of their exact facial features, bone structure, eye colors, skin tone and ethnicities — the resemblance to both parents must be clearly visible and convincing. Automatically match the visual style of the parents: if both are real humans use photorealistic photography style, if they are superheroes or comic characters use cinematic comic illustration style matching their universe, if they are anime characters use anime art style matching their show, if they are animated or CGI characters use matching animation style, if styles are mixed blend both naturally in the child. The child has a soft sweet and genuine smile showing natural warmth and childhood innocence. They are wearing a randomized unique casual everyday outfit appropriate to their visual style. For real humans: soft warm natural lighting, gentle depth of field, beautifully blurred background, authentic high-end lifestyle photography, highly detailed skin textures, 8K resolution. For fictional characters: match the lighting and atmosphere of their original universe. Generate ONE child only. Do not show both parents. Do not add text, watermarks, borders or logos.`;
+        // Step 1 — Analyze both parents and generate a detailed child description
+        console.log("Step 1: Analyzing parent features...");
 
-        const response = await ai.models.generateContent({
-            model: "gemini-2.0-flash-exp-image-generation",
-            contents: [
-                {
-                    parts: [
-                        {
-                            inlineData: {
-                                mimeType: "image/jpeg",
-                                data: image1Base64
-                            }
-                        },
-                        {
-                            inlineData: {
-                                mimeType: "image/jpeg",
-                                data: image2Base64
-                            }
-                        },
-                        {
-                            text: prompt
+        const analysisResponse = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: [{
+                parts: [
+                    {
+                        inlineData: {
+                            mimeType: "image/jpeg",
+                            data: image1Base64
                         }
-                    ]
-                }
-            ],
+                    },
+                    {
+                        inlineData: {
+                            mimeType: "image/jpeg",
+                            data: image2Base64
+                        }
+                    },
+                    {
+                        text: `Analyze the facial features, skin tone, eye colors, hair texture, and ethnicity of both individuals in these photos. Write a highly descriptive image generation prompt to create a realistic photo of their single biological child around 10 years old. Randomize the gender. The child must seamlessly inherit a natural blend of both parents traits. If parents are real humans use photorealistic photography style. If they are animated or fictional characters match their visual style. Include: half-body portrait from waist up, soft warm natural lighting, blurred background, only one child visible, no text, no watermarks, 8K resolution. Return ONLY the final detailed prompt text with no introduction or explanation.`
+                    }
+                ]
+            }]
+        });
+
+        const blendedPrompt = analysisResponse.candidates[0].content.parts[0].text;
+        console.log("Generated prompt:", blendedPrompt);
+
+        // Step 2 — Generate baby image using the prompt
+        console.log("Step 2: Generating baby image...");
+
+        const imageResponse = await ai.models.generateContent({
+            model: "gemini-2.0-flash-exp-image-generation",
+            contents: [{
+                parts: [
+                    {
+                        text: blendedPrompt
+                    }
+                ]
+            }],
             config: {
                 responseModalities: ["TEXT", "IMAGE"]
             }
         });
 
-        // Find image in response
-        const parts = response.candidates[0].content.parts;
+        const parts = imageResponse.candidates[0].content.parts;
         const imagePart = parts.find(part => part.inlineData);
 
         if (!imagePart) {
-            return res.status(500).json({ 
-                error: "No image generated. Please try again." 
+            return res.status(500).json({
+                error: "No image generated. Please try again."
             });
         }
 
@@ -72,8 +87,8 @@ export default async function handler(req, res) {
 
     } catch (error) {
         console.error("Generation error:", error.message);
-        return res.status(500).json({ 
-            error: error.message || "Something went wrong." 
+        return res.status(500).json({
+            error: error.message || "Something went wrong."
         });
     }
 }
