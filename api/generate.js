@@ -60,7 +60,7 @@ export default async function handler(req, res) {
         console.log("Step 2: Generating baby image...");
 
         const imageResponse = await ai.models.generateContent({
-            model: "gemini-2.0-flash-exp-image-generation",
+            model: "model: "gemini-2.5-flash-image",
             contents: [{
                 parts: [
                     {
