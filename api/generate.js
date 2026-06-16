@@ -36,11 +36,11 @@ export default async function handler(req, res) {
             return 'image/jpeg';
         };
 
-        // Step 1 — Analyze both parents
+        // Step 1 — Analyze both parents with gemini-2.5-flash
         console.log("Step 1: Analyzing parent features...");
 
         const analysisResponse = await ai.models.generateContent({
-            model: "gemini-1.5-flash",
+            model: "gemini-2.5-flash",
             contents: [{
                 parts: [
                     {
@@ -62,11 +62,7 @@ export default async function handler(req, res) {
             }]
         });
 
-        let blendedPrompt = '';
-        if (analysisResponse.candidates?.[0]?.content?.parts?.[0]) {
-            blendedPrompt = analysisResponse.candidates[0].content.parts[0].text;
-        }
-
+        const blendedPrompt = analysisResponse.candidates?.[0]?.content?.parts?.[0]?.text;
         console.log("Generated prompt:", blendedPrompt);
 
         if (!blendedPrompt) {
@@ -85,7 +81,7 @@ export default async function handler(req, res) {
         while (attempts < maxAttempts) {
             try {
                 imageResponse = await ai.models.generateContent({
-                    model: "gemini-2.5-flash-image",
+                    model: "gemini-3.1-flash-image",
                     contents: [{
                         parts: [{
                             text: blendedPrompt
