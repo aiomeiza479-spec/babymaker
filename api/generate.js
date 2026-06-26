@@ -29,15 +29,14 @@ export default async function handler(req, res) {
         const image1Base64 = image1.includes(",") ? image1.split(",")[1] : image1;
         const image2Base64 = image2.includes(",") ? image2.split(",")[1] : image2;
 
-        // Smart mime type detection
         const getMimeType = (base64String) => {
             if (base64String.startsWith('/9j/')) return 'image/jpeg';
             if (base64String.startsWith('iVBORw0KGgo')) return 'image/png';
             return 'image/jpeg';
         };
 
-        // Step 1 — Analyze both parents with gemini-2.5-flash
-        console.log("Step 1: Analyzing parent features...");
+        // Step 1 — Analyze parents with Gemini text model
+        console.log("Step 1: Analyzing parents...");
 
         const analysisResponse = await ai.models.generateContent({
             model: "gemini-2.5-flash",
@@ -56,14 +55,13 @@ export default async function handler(req, res) {
                         }
                     },
                     {
-                        text: `Analyze the facial features, skin tone, eye colors, hair texture, and ethnicity of both individuals in these photos. Write a highly descriptive image generation prompt to create a realistic photo of their single biological child around 10 years old. Randomize the gender. The child must seamlessly inherit a natural blend of both parents traits. If parents are real humans use photorealistic photography style. If they are animated or fictional characters match their visual style. Include: half-body portrait from waist up, soft warm natural lighting, blurred background, only one child visible, no text, no watermarks, 8K resolution. Return ONLY the final detailed prompt text with no introduction or explanation.`
+                        text: `Analyze the facial features, skin tone, eye colors, hair texture, and ethnicity of both individuals. Write a detailed image generation prompt for their biological child around 10 years old. Randomize the gender. The child must blend both parents features naturally. Use photorealistic style for real humans, match animation style for fictional characters. Include: half-body portrait from waist up, soft warm natural lighting, blurred background, only one child, no text, no watermarks, 8K resolution. Return ONLY the prompt text with no introduction.`
                     }
                 ]
             }]
         });
 
         const blendedPrompt = analysisResponse.candidates?.[0]?.content?.parts?.[0]?.text;
-        console.log("Generated prompt:", blendedPrompt);
 
         if (!blendedPrompt) {
             return res.status(500).json({
@@ -71,66 +69,68 @@ export default async function handler(req, res) {
             });
         }
 
-        // Step 2 — Generate baby image with retry logic
-        console.log("Step 2: Generating baby image...");
+        console.log("Generated prompt:", blendedPrompt);
 
-        let imageResponse = null;
+        // Step 2 — Generate image with Hugging Face FLUX
+        console.log("Step 2: Generating with HuggingFace...");
+
+        let imageData = null;
         let attempts = 0;
         const maxAttempts = 5;
 
         while (attempts < maxAttempts) {
-            try {
-                imageResponse = await ai.models.generateContent({
-                    model: "gemini-3.1-flash-image",
-                    contents: [{
-                        parts: [{
-                            text: blendedPrompt
-                        }]
-                    }],
-                    config: {
-                        responseModalities: ["TEXT", "IMAGE"]
-                    }
-                });
-                break;
-            } catch (imgError) {
-                attempts++;
-                console.warn(`Attempt ${attempts} failed: ${imgError.message}`);
-
-                const isBusy = imgError.message.includes("503") ||
-                               imgError.message.toLowerCase().includes("demand") ||
-                               imgError.message.includes("UNAVAILABLE") ||
-                               imgError.message.includes("429");
-
-                if (attempts < maxAttempts && isBusy) {
-                    const delay = 3000 * attempts;
-                    console.log(`Waiting ${delay/1000}s before retry...`);
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                } else {
-                    throw imgError;
+            const hfResponse = await fetch(
+                "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell",
+                {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${process.env.HUGGINGFACE_API_TOKEN}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        inputs: blendedPrompt,
+                        parameters: {
+                            num_inference_steps: 4,
+                            width: 512,
+                            height: 512
+                        }
+                    })
                 }
+            );
+
+            console.log("HF Status:", hfResponse.status);
+
+            // Model still loading — wait and retry
+            if (hfResponse.status === 503) {
+                attempts++;
+                console.log(`Model loading, attempt ${attempts}. Waiting 15 seconds...`);
+                await new Promise(resolve => setTimeout(resolve, 15000));
+                continue;
             }
+
+            if (!hfResponse.ok) {
+                const errorText = await hfResponse.text();
+                throw new Error(`HuggingFace error: ${errorText}`);
+            }
+
+            // Success — convert to base64
+            const arrayBuffer = await hfResponse.arrayBuffer();
+            const base64 = Buffer.from(arrayBuffer).toString('base64');
+            imageData = `data:image/jpeg;base64,${base64}`;
+            console.log("Image generated successfully!");
+            break;
         }
 
-        if (!imageResponse) {
+        if (!imageData) {
             return res.status(503).json({
-                error: "Service is busy. Please try again in a moment."
+                error: "Image service is busy. Please try again in 30 seconds."
             });
         }
 
-        const parts = imageResponse.candidates?.[0]?.content?.parts;
-        const imagePart = parts?.find(part => part.inlineData);
-
-        if (!imagePart) {
-            return res.status(500).json({
-                error: "No image generated. Please try again."
-            });
-        }
-
-        const outputBase64 = `data:image/jpeg;base64,${imagePart.inlineData.data}`;
-        return res.status(200).json({ output: outputBase64 });
+        return res.status(200).json({ output: imageData });
 
     } catch (error) {
-        console.error("Generation error:", error.message);
+        console.error("Error:", error.message);
         return res.status(500).json({
             error: error.message || "Something went wrong."
         });
